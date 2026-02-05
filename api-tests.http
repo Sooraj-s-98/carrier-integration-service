@@ -1,0 +1,56 @@
+########################################
+### CONFIG
+########################################
+
+@base = http://localhost:3000/api/v1
+@username = sooraj
+@password = secret123
+
+########################################
+### STATUS — health check
+########################################
+
+GET {{base}}/status
+
+
+########################################
+### REGISTER — create user
+########################################
+
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "{{username}}",
+  "password": "{{password}}"
+}
+
+
+########################################
+### REGISTER — duplicate user (should fail)
+########################################
+
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "{{username}}",
+  "password": "{{password}}"
+}
+
+
+########################################
+### LOGIN — get JWT
+########################################
+
+# @name login
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{username}}",
+  "password": "{{password}}"
+}
+
+###
+@token = {{l
