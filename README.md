@@ -285,15 +285,50 @@ Script:
 
 ---
 
-# Adding New Carriers
+## UPS OAuth — Authorization Code Flow
 
-Add new carrier by:
+Implementation follows UPS OAuth2 Authorization Code grant flow:
 
-1. Implement OAuthProvider
-2. Implement RateProvider
-3. Register in registry.ts
+- Authorization redirect
+- Code exchange
+- Access token + refresh token
+- Token refresh lifecycle
+- Per-user carrier account linking
 
-No UPS code changes required.
+Official reference:
+
+https://developer.ups.com/api/reference/oauth/authorization-code?loc=en_US
+
+Covered in this project:
+
+- Authorize URL generation
+- Callback handling
+- Token exchange
+- Token refresh
+- Token expiry handling
+- Secure token storage per user
+
+---
+
+## UPS Rating API
+
+Rate shopping implementation is based on UPS Rating API documentation.
+
+Features implemented:
+
+- Shop rates request
+- Payload mapping from internal domain model
+- Response normalization
+- Carrier-agnostic rate quote output
+- Stubbed API responses for integration tests
+- Structured error handling
+
+Official reference:
+
+https://developer.ups.com/tag/Rating?loc=en_US#section/Reference
+
+---
+
 
 ---
 
