@@ -1,5 +1,6 @@
 import { Router } from "express"
 import { v4 as uuid } from "uuid"
+import { requireBasicAuth } from "../middleware/upsAuth"
 
 export const upsRouter = Router()
 
@@ -40,6 +41,7 @@ upsRouter.get(
 
 upsRouter.post(
     "/security/v1/oauth/token",
+    requireBasicAuth,
     (_req, res) => {
 
         console.log("[UPS TOKEN] exchange")
@@ -64,6 +66,7 @@ upsRouter.post(
 
 upsRouter.post(
     "/security/v1/oauth/refresh",
+    requireBasicAuth,
     (req, res) => {
 
         const refresh = req.body.refresh_token
