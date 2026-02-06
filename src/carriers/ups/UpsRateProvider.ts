@@ -21,38 +21,57 @@ export class UpsRateProvider implements RateProvider {
     userId: string,
     req: RateRequest
   ): Promise<RateQuote[]> {
-
+  
     logger.info("UPS rate request started", { userId })
-
+  
     const body = this.buildUpsRequest(req)
-
+  
     const token =
       await this.auth.getValidAccessToken(userId)
-
+  
     try {
-      return await this.callUps(token, body, userId)
-
-    } catch (err: any) {
-
+  
+      return await this.callUps(
+        token,
+        body,
+        userId
+      )
+  
+    } catch (err) {
+  
       /* -------------------------
-         Retry once if auth error
+         Retry once on auth failure
       --------------------------*/
-
-      if (err.response?.status === 401) {
-
-        logger.warn("UPS token rejected — refreshing", {
-          userId
-        })
-
+  
+      if (
+        err instanceof CarrierError &&
+        err.code === "CARRIER_AUTH_FAILED"
+      ) {
+        logger.warn(
+          "UPS auth failed — refreshing token",
+          { userId }
+        )
+  
         const fresh =
           await this.auth.getValidAccessToken(userId)
-
-        return this.callUps(fresh, body, userId)
+  
+        return this.callUps(
+          fresh,
+          body,
+          userId
+        )
       }
 
+  
+      if (err instanceof CarrierError) {
+        throw err
+      }
+  
+  
       throw this.mapAxiosError(err)
     }
   }
+  
 
   /**
    * Makes a call to the UPS rate API with the given token and body.
@@ -70,30 +89,107 @@ export class UpsRateProvider implements RateProvider {
 
     logger.info("Calling UPS rate API", { userId })
 
-    const resp = await axios.post(
-      `${env.upsBase}/api/rating/v2409/Shop`,
-      body,
-      {
-        timeout: 8000, 
-        headers: {
-          Authorization: `Bearer ${token}`,
-          transId: "rate_" + Date.now(),
-          transactionSrc: "carrier-service"
-        }
-      }
-    )
+    try {
 
-    if (!resp.data?.RateResponse) {
+      const resp = await axios.post(
+        `${env.upsBase}/api/rating/v2409/Shop`,
+        body,
+        {
+          timeout: 5000,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            transId: "rate_" + Date.now(),
+            transactionSrc: "carrier-service"
+          }
+        }
+      )
+
+      if (!resp.data?.RateResponse) {
+        throw new CarrierError(
+          "CARRIER_BAD_RESPONSE",
+          "ups",
+          resp.status,
+          resp.data
+        )
+      }
+
+      return this.normalize(resp.data)
+
+    } catch (err: any) {
+
+      /* -------------------------
+         Auth failure (401)
+      --------------------------*/
+
+      if (err.response?.status === 401) {
+
+        logger.warn("UPS returned 401", { userId })
+
+        throw new CarrierError(
+          "CARRIER_AUTH_FAILED",
+          "ups",
+          401,
+          err.response.data
+        )
+      }
+
+      /* -------------------------
+         Rate limited
+      --------------------------*/
+
+      if (err.response?.status === 429) {
+        throw new CarrierError(
+          "CARRIER_RATE_LIMITED",
+          "ups",
+          429,
+          err.response.data
+        )
+      }
+
+      /* -------------------------
+         Other HTTP errors
+      --------------------------*/
+
+      if (err.response) {
+        throw new CarrierError(
+          "CARRIER_HTTP_ERROR",
+          "ups",
+          err.response.status,
+          err.response.data
+        )
+      }
+
+      /* -------------------------
+         Network errors
+      --------------------------*/
+
+      if (err.code === "ECONNABORTED") {
+        throw new CarrierError(
+          "CARRIER_TIMEOUT",
+          "ups"
+        )
+      }
+
+      if (err.code === "ECONNREFUSED") {
+        throw new CarrierError(
+          "CARRIER_UNAVAILABLE",
+          "ups"
+        )
+      }
+
+      /* -------------------------
+         Unknown
+      --------------------------*/
+
       throw new CarrierError(
-        "CARRIER_BAD_RESPONSE",
+        "CARRIER_UNKNOWN_ERROR",
         "ups",
-        resp.status,
-        resp.data
+        undefined,
+        err
       )
     }
-
-    return this.normalize(resp.data)
   }
+
 
   /**
    * Maps an Axios error to a CarrierError.
@@ -192,7 +288,20 @@ export class UpsRateProvider implements RateProvider {
 
     logger.info("Normalizing UPS rate response")
 
-    const list = data.RateResponse?.RatedShipment || []
+    if (!data?.RateResponse?.RatedShipment) {
+      throw new CarrierError(
+        "CARRIER_BAD_RESPONSE",
+        "ups",
+        undefined,
+        data
+      )
+    }
+
+    const listRaw = data.RateResponse.RatedShipment
+
+    const list = Array.isArray(listRaw)
+      ? listRaw
+      : [listRaw]
 
     return list.map((s: any) => ({
       carrier: "ups",

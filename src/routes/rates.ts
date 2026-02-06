@@ -3,8 +3,12 @@ import { requireAuth } from "../middleware/auth"
 import { rateRegistry } from "../carriers/rateRegistry"
 import { rateRequestSchema } from "../validation/rateSchema"
 import { logger } from "../infra/logger"
+import { CarrierError } from "../errors/CarrierError"
+
 
 const r = Router()
+
+
 
 r.post("/", requireAuth, async (req: any, res, next) => {
   try {
@@ -60,6 +64,18 @@ r.post("/", requireAuth, async (req: any, res, next) => {
     res.json({ quotes })
 
   } catch (err) {
+    if (err instanceof CarrierError) {
+
+      logger.warn("carrier_error", {
+        code: err.code,
+        carrier: err.carrier,
+        details: err.details
+      })
+
+      return res
+        .status(err.httpStatus)
+        .json(err.toResponse())
+    }
     logger.error("rate_failed", { err })
     next(err)
   }
