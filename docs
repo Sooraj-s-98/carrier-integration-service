@@ -1,3 +1,0 @@
-
-
-psql -U sooraj -d cybership -f src/db/init.sql

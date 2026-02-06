@@ -6,6 +6,11 @@ type AuthedRequest = Request & {
     userId: string
   }
 }
+/**
+ * Middleware to verify the authentication token sent in the Authorization header.
+ * If the token is valid, it sets the req.user property to the user ID payload.
+ * If the token is invalid or missing, it returns a 401 Unauthorized response.
+ */
 export function requireAuth(
   req: AuthedRequest,
   res: Response,

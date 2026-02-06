@@ -63,3 +63,32 @@ Authorization: Bearer {{token}}
 GET {{base}}/carriers/ups/callback?code=fake_addddduffh_code_042e6ffffdec-74d0-444c-bf0d-5b2d9ce5560b&state=1acb7e8e-d6ggg0c-42fe-84c3-f83b2a64e65c
 
 
+########################################
+### rate
+########################################
+
+POST {{base}}/rates
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "carrier": "ups",
+  "shipper": {
+    "city": "NYC",
+    "state": "NY",
+    "postalCode": "10001",
+    "countryCode": "US"
+  },
+  "shipTo": {
+    "city": "LA",
+    "state": "CA",
+    "postalCode": "90001",
+    "countryCode": "US"
+  },
+  "pkg": {
+    "weight": 2,
+    "length": 10,
+    "width": 8,
+    "height": 6
+  }
+}

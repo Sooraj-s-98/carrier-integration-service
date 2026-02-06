@@ -17,6 +17,11 @@ export class UpsOAuthProvider implements OAuthProvider {
      Authorize URL
   ----------------------------*/
 
+  /**
+   * Generate an authorize URL for the UPS OAuth flow
+   * @param {string} state - The state parameter for the OAuth flow
+   * @returns {string} The authorize URL
+   */
   getAuthorizeUrl(state: string): string {
     return `${env.upsBase}/security/v1/oauth/authorize` +
       `?client_id=${env.upsClientId}` +
@@ -71,6 +76,12 @@ export class UpsOAuthProvider implements OAuthProvider {
      Get Valid Token (auto refresh)
   ----------------------------*/
 
+  /**
+   * Gets a valid access token for the given user, auto-refreshing if necessary.
+   * @param {string} userId - The ID of the user to get the token for.
+   * @returns {Promise<string>} The valid access token.
+   * @throws {Error} If the user is not connected to UPS.
+   */
   async getValidAccessToken(
     userId: string
   ): Promise<string> {
@@ -102,6 +113,12 @@ export class UpsOAuthProvider implements OAuthProvider {
      Refresh Token
   ----------------------------*/
 
+  /**
+   * Refreshes the access token for the given user's UPS account.
+   * @param {CarrierAccountRow} acc - The row from the user_carrier_accounts table
+   * @returns {Promise<string>} The refreshed access token
+   * @throws {Error} If the refresh token request fails
+   */
   private async refreshToken(
     acc: CarrierAccountRow
   ): Promise<string> {
@@ -141,6 +158,11 @@ export class UpsOAuthProvider implements OAuthProvider {
      Helpers
   ----------------------------*/
 
+  /**
+   * Generates a basic authorization header for the UPS API
+   * @returns {object} A headers object with the "Authorization" and "Content-Type" headers set.
+   * @private
+   */
   private basicAuthHeader() {
     return {
       Authorization:
