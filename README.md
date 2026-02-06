@@ -277,12 +277,6 @@ Run CLI with port:
 npm run cli --port=3000
 ```
 
-Script:
-
-```json
-"cli": "ts-node src/cli/demo.ts $npm_config_port"
-```
-
 ---
 
 ## UPS OAuth — Authorization Code Flow
