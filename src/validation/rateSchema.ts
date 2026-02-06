@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { isCarrierCode } from "../carriers/guards"
 
 /* ---------------------------
    Address
@@ -44,3 +45,18 @@ export const rateRequestSchema = z.object({
 
 export type RateRequestInput =
   z.infer<typeof rateRequestSchema>
+
+
+
+export const carrierCallbackSchema = z.object({
+   carrier: z.string().refine(
+     isCarrierCode,
+     { message: "Unsupported carrier" }
+   ),
+   code: z.string().min(1, { message: "code is required" }),
+   state: z.string().uuid({
+      message: "state must be a valid userId UUID"
+    })
+ })
+
+ export type CarrierCallbackInput = z.infer<typeof carrierCallbackSchema>

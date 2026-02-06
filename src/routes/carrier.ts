@@ -3,6 +3,8 @@ import { carrierOAuthRegistry } from "../carriers/registry"
 import { requireAuth } from "../middleware/auth"
 import { logger } from "../infra/logger"
 import { isCarrierCode } from "../carriers/guards"
+import { carrierCallbackSchema } from "../validation/rateSchema"
+import { CarrierError } from "../errors/CarrierError"
 
 const router = Router()
 
@@ -77,8 +79,34 @@ router.get(
     next: NextFunction
   ) => {
     try {
-      const carrier = req.params.carrier as string
-      const { code, state } = req.query
+
+      const raw = {
+        carrier: req.params.carrier,
+        code: Array.isArray(req.query.code) ? req.query.code[0] : req.query.code,
+        state: Array.isArray(req.query.state) ? req.query.state[0] : req.query.state
+      }
+
+      const parsed = carrierCallbackSchema.safeParse(raw)
+
+      if (!parsed.success) {
+        const issues = parsed.error.issues.map(i => ({
+          path: i.path.join("."),
+          message: i.message
+        }))
+
+        logger.warn("carrier_callback_validation_failed", {
+          raw,
+          issues
+        })
+
+        return res.status(400).json({
+          error: "invalid_request",
+          message: "Invalid callback parameters",
+          details: issues
+        })
+      }
+
+      const { carrier, code, state } = parsed.data
 
       logger.info("carrier_callback_received", {
         carrier,
@@ -86,32 +114,19 @@ router.get(
         state
       })
 
-      if (!isCarrierCode(carrier)) {
-        logger.warn("carrier_callback_unsupported", {
+      const provider = carrierOAuthRegistry[carrier]
+
+      if (!provider) {
+        logger.warn("carrier_callback_unsupported_after_validation", {
           carrier
         })
         return res.status(404).json({
-          error: "Unsupported carrier"
+          error: "unsupported_carrier",
+          message: `Carrier '${carrier}' is not supported`
         })
       }
 
-      if (!code || !state) {
-        logger.warn("carrier_callback_missing_params", {
-          carrier,
-          codePresent: !!code,
-          statePresent: !!state
-        })
-        return res.status(400).json({
-          error: "Missing code or state"
-        })
-      }
-
-      const provider = carrierOAuthRegistry[carrier]
-
-      await provider.handleCallback(
-        code as string,
-        state as string
-      )
+      await provider.handleCallback(code, state)
 
       logger.info("carrier_connected", {
         carrier,
@@ -120,15 +135,23 @@ router.get(
 
       return res.send("Connected!")
 
-    } catch (err) {
-      logger.error("carrier_callback_failed", {
-        err,
-        carrier: req.params.carrier,
-        query: req.query
-      })
+    } catch (err: any) {
+      if (err instanceof CarrierError) {
+        logger.error("carrier_callback_failed", {
+          err,
+          params: req.params,
+          query: req.query
+        })
+
+        return res
+          .status(err.httpStatus)
+          .json(err.toResponse())
+      }
+      logger.error("carrier_callback_failed", { err })
       next(err)
     }
   }
+
 )
 
 export default router

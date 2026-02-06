@@ -5,7 +5,7 @@ import { logger } from "../infra/logger"
 
 const router = Router()
 
-router.get("/status", async (_req, res) => {
+router.get("/", async (_req, res) => {
   const dbUp = await checkDbHealth()
 
   const payload = {

@@ -21,10 +21,11 @@ authRoutes.post(
         ok: true
       })
 
-    } catch (err) {
+    } catch (err : any) {
       logger.error("register_failed", { err })
       return res.status(400).json({
-        ok: false
+        ok: false,
+        message: err.message || "Registration failed"
       })
     }
   }
@@ -43,9 +44,20 @@ authRoutes.post(
 
       return res.json({ token })
 
-    } catch (err) {
+    } catch (err: any) {
       logger.warn("login_failed", { err })
-      next(err)
+    
+      if (err.message === "Username or password is incorrect") {
+        return res.status(401).json({
+          error: "invalid_credentials",
+          message: err.message
+        })
+      }
+    
+      return res.status(400).json({
+        error: "login_failed",
+         message: err.message || "Login failed"
+      })
     }
   }
 )

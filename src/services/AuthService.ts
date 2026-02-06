@@ -36,7 +36,7 @@ export class AuthService {
 
     if (!user) {
       logger.warn("login_user_not_found", { username })
-      throw new Error("Invalid credentials")
+      throw new Error("Username or password is incorrect")
     }
 
     const ok = await bcrypt.compare(
@@ -46,7 +46,7 @@ export class AuthService {
 
     if (!ok) {
       logger.warn("login_bad_password", { username })
-      throw new Error("Invalid credentials")
+      throw new Error("Username or password is incorrect")
     }
 
     const token = jwt.sign(
