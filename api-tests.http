@@ -6,6 +6,7 @@
 @username = sooraj
 @password = secret123
 
+
 ########################################
 ### STATUS — health check
 ########################################
@@ -15,19 +16,6 @@ GET {{base}}/status
 
 ########################################
 ### REGISTER — create user
-########################################
-
-POST {{base}}/auth/register
-Content-Type: application/json
-
-{
-  "username": "{{username}}",
-  "password": "{{password}}"
-}
-
-
-########################################
-### REGISTER — duplicate user (should fail)
 ########################################
 
 POST {{base}}/auth/register
@@ -52,5 +40,26 @@ Content-Type: application/json
   "password": "{{password}}"
 }
 
-###
-@token = {{l
+
+########################################
+### CAPTURE TOKEN
+########################################
+
+@token = {{login.response.body.token}}
+
+
+########################################
+### AUTH CHECK — protected route test
+########################################
+
+GET {{base}}/carriers/ups/connect
+Authorization: Bearer {{token}}
+
+
+########################################
+### OAUTH CALLBACK — simulate UPS redirect
+########################################
+
+GET {{base}}/carriers/ups/callback?code=fake_addddduffh_code_042e6ffffdec-74d0-444c-bf0d-5b2d9ce5560b&state=1acb7e8e-d6ggg0c-42fe-84c3-f83b2a64e65c
+
+
