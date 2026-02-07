@@ -1,22 +1,22 @@
-import { Router } from "express"
-import { serviceInfo } from "../config/service"
-import { checkDbHealth } from "../db/health"
-import { logger } from "../infra/logger"
+import { Router } from 'express'
+import { serviceInfo } from '../config/service'
+import { checkDbHealth } from '../db/health'
+import { logger } from '../infra/logger'
 
 const router = Router()
 
-router.get("/", async (_req, res) => {
+router.get('/', async (_req, res) => {
   const dbUp = await checkDbHealth()
 
   const payload = {
-    status: dbUp ? "ok" : "degraded",
+    status: dbUp ? 'ok' : 'degraded',
     service: serviceInfo.name,
     version: serviceInfo.version,
     time: new Date().toISOString(),
-    db: dbUp ? "up" : "down"
+    db: dbUp ? 'up' : 'down'
   }
 
-  logger.info("status_check", payload)
+  logger.info('status_check', payload)
 
   res.status(dbUp ? 200 : 503).json(payload)
 })

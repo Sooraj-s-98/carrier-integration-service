@@ -1,13 +1,12 @@
-import axios from "axios"
-import { RateProvider } from "../base/RateProvider"
-import { RateRequest, RateQuote } from "../../domain/rate"
-import { UpsOAuthProvider } from "./UpsOAuthProvider"
-import { env } from "../../config/env"
-import { logger } from "../../infra/logger"
-import { CarrierError } from "../../errors/CarrierError"
+import axios from 'axios'
+import { RateProvider } from '../base/RateProvider'
+import { RateRequest, RateQuote } from '../../domain/rate'
+import { UpsOAuthProvider } from './UpsOAuthProvider'
+import { env } from '../../config/env'
+import { logger } from '../../infra/logger'
+import { CarrierError } from '../../errors/CarrierError'
 
 export class UpsRateProvider implements RateProvider {
-
   private auth = new UpsOAuthProvider()
 
   /**
@@ -17,61 +16,35 @@ export class UpsRateProvider implements RateProvider {
    * @returns {Promise<RateQuote[]>} The rates for the given rate request.
    * @throws {CarrierError} If the user is not connected to UPS or if the request fails.
    */
-  async getRates(
-    userId: string,
-    req: RateRequest
-  ): Promise<RateQuote[]> {
-  
-    logger.info("UPS rate request started", { userId })
-  
+  async getRates(userId: string, req: RateRequest): Promise<RateQuote[]> {
+    logger.info('UPS rate request started', { userId })
+
     const body = this.buildUpsRequest(req)
-  
-    const token =
-      await this.auth.getValidAccessToken(userId)
-  
+
+    const token = await this.auth.getValidAccessToken(userId)
+
     try {
-  
-      return await this.callUps(
-        token,
-        body,
-        userId
-      )
-  
+      return await this.callUps(token, body, userId)
     } catch (err) {
-  
       /* -------------------------
          Retry once on auth failure
       --------------------------*/
-  
-      if (
-        err instanceof CarrierError &&
-        err.code === "CARRIER_AUTH_FAILED"
-      ) {
-        logger.warn(
-          "UPS auth failed — refreshing token",
-          { userId }
-        )
-  
-        const fresh =
-          await this.auth.getValidAccessToken(userId)
-  
-        return this.callUps(
-          fresh,
-          body,
-          userId
-        )
+
+      if (err instanceof CarrierError && err.code === 'CARRIER_AUTH_FAILED') {
+        logger.warn('UPS auth failed — refreshing token', { userId })
+
+        const fresh = await this.auth.getValidAccessToken(userId)
+
+        return this.callUps(fresh, body, userId)
       }
 
-  
       if (err instanceof CarrierError) {
         throw err
       }
-  
-  
+
       throw this.mapAxiosError(err)
     }
   }
-  
 
   /**
    * Makes a call to the UPS rate API with the given token and body.
@@ -86,11 +59,9 @@ export class UpsRateProvider implements RateProvider {
     body: any,
     userId: string
   ): Promise<RateQuote[]> {
-
-    logger.info("Calling UPS rate API", { userId })
+    logger.info('Calling UPS rate API', { userId })
 
     try {
-
       const resp = await axios.post(
         `${env.upsBase}/api/rating/v2409/Shop`,
         body,
@@ -98,36 +69,33 @@ export class UpsRateProvider implements RateProvider {
           timeout: 5000,
           headers: {
             Authorization: `Bearer ${token}`,
-            transId: "rate_" + Date.now(),
-            transactionSrc: "carrier-service"
+            transId: 'rate_' + Date.now(),
+            transactionSrc: 'carrier-service'
           }
         }
       )
 
       if (!resp.data?.RateResponse) {
         throw new CarrierError(
-          "CARRIER_BAD_RESPONSE",
-          "ups",
+          'CARRIER_BAD_RESPONSE',
+          'ups',
           resp.status,
           resp.data
         )
       }
 
       return this.normalize(resp.data)
-
     } catch (err: any) {
-
       /* -------------------------
          Auth failure (401)
       --------------------------*/
 
       if (err.response?.status === 401) {
-
-        logger.warn("UPS returned 401", { userId })
+        logger.warn('UPS returned 401', { userId })
 
         throw new CarrierError(
-          "CARRIER_AUTH_FAILED",
-          "ups",
+          'CARRIER_AUTH_FAILED',
+          'ups',
           401,
           err.response.data
         )
@@ -139,8 +107,8 @@ export class UpsRateProvider implements RateProvider {
 
       if (err.response?.status === 429) {
         throw new CarrierError(
-          "CARRIER_RATE_LIMITED",
-          "ups",
+          'CARRIER_RATE_LIMITED',
+          'ups',
           429,
           err.response.data
         )
@@ -152,8 +120,8 @@ export class UpsRateProvider implements RateProvider {
 
       if (err.response) {
         throw new CarrierError(
-          "CARRIER_HTTP_ERROR",
-          "ups",
+          'CARRIER_HTTP_ERROR',
+          'ups',
           err.response.status,
           err.response.data
         )
@@ -163,33 +131,21 @@ export class UpsRateProvider implements RateProvider {
          Network errors
       --------------------------*/
 
-      if (err.code === "ECONNABORTED") {
-        throw new CarrierError(
-          "CARRIER_TIMEOUT",
-          "ups"
-        )
+      if (err.code === 'ECONNABORTED') {
+        throw new CarrierError('CARRIER_TIMEOUT', 'ups')
       }
 
-      if (err.code === "ECONNREFUSED") {
-        throw new CarrierError(
-          "CARRIER_UNAVAILABLE",
-          "ups"
-        )
+      if (err.code === 'ECONNREFUSED') {
+        throw new CarrierError('CARRIER_UNAVAILABLE', 'ups')
       }
 
       /* -------------------------
          Unknown
       --------------------------*/
 
-      throw new CarrierError(
-        "CARRIER_UNKNOWN_ERROR",
-        "ups",
-        undefined,
-        err
-      )
+      throw new CarrierError('CARRIER_UNKNOWN_ERROR', 'ups', undefined, err)
     }
   }
-
 
   /**
    * Maps an Axios error to a CarrierError.
@@ -201,37 +157,25 @@ export class UpsRateProvider implements RateProvider {
    * @returns {CarrierError} The mapped CarrierError.
    */
   private mapAxiosError(err: any): CarrierError {
-
-    if (err.code === "ECONNREFUSED") {
-      return new CarrierError(
-        "CARRIER_UNAVAILABLE",
-        "ups"
-      )
+    if (err.code === 'ECONNREFUSED') {
+      return new CarrierError('CARRIER_UNAVAILABLE', 'ups')
     }
 
-    if (err.code === "ECONNABORTED") {
-      return new CarrierError(
-        "CARRIER_TIMEOUT",
-        "ups"
-      )
+    if (err.code === 'ECONNABORTED') {
+      return new CarrierError('CARRIER_TIMEOUT', 'ups')
     }
 
     if (err.response) {
       return new CarrierError(
-        "CARRIER_HTTP_ERROR",
-        "ups",
+        'CARRIER_HTTP_ERROR',
+        'ups',
         err.response.status,
         err.response.data
       )
     }
 
-    return new CarrierError(
-      "CARRIER_UNKNOWN_ERROR",
-      "ups"
-    )
+    return new CarrierError('CARRIER_UNKNOWN_ERROR', 'ups')
   }
-
-
 
   /**
    * Builds a UPS rate request payload from a RateRequest object
@@ -239,8 +183,7 @@ export class UpsRateProvider implements RateProvider {
    * @returns {object} The built UPS rate request payload
    */
   private buildUpsRequest(r: RateRequest) {
-
-    logger.info("Building UPS rate payload", {
+    logger.info('Building UPS rate payload', {
       shipperCity: r.shipper.city,
       shipToCity: r.shipTo.city
     })
@@ -285,31 +228,21 @@ export class UpsRateProvider implements RateProvider {
    * @returns {RateQuote[]} The normalized RateQuote array
    */
   private normalize(data: any): RateQuote[] {
-
-    logger.info("Normalizing UPS rate response")
+    logger.info('Normalizing UPS rate response')
 
     if (!data?.RateResponse?.RatedShipment) {
-      throw new CarrierError(
-        "CARRIER_BAD_RESPONSE",
-        "ups",
-        undefined,
-        data
-      )
+      throw new CarrierError('CARRIER_BAD_RESPONSE', 'ups', undefined, data)
     }
 
     const listRaw = data.RateResponse.RatedShipment
 
-    const list = Array.isArray(listRaw)
-      ? listRaw
-      : [listRaw]
+    const list = Array.isArray(listRaw) ? listRaw : [listRaw]
 
     return list.map((s: any) => ({
-      carrier: "ups",
+      carrier: 'ups',
       serviceCode: s.Service.Code,
       serviceName: s.Service.Description,
-      amount: Number(
-        s.TotalCharges.MonetaryValue
-      ),
+      amount: Number(s.TotalCharges.MonetaryValue),
       currency: s.TotalCharges.CurrencyCode
     }))
   }

@@ -1,4 +1,4 @@
-import { db } from "./client"
+import { db } from './client'
 
 export type UserRow = {
   id: string
@@ -7,7 +7,6 @@ export type UserRow = {
 }
 
 export class UserRepo {
-
   /**
    * Create a new user.
    *
@@ -15,12 +14,7 @@ export class UserRepo {
    * @param username The user's username.
    * @param hash The user's password hash.
    */
-  async create(
-    id: string,
-    username: string,
-    hash: string
-  ): Promise<void> {
-
+  async create(id: string, username: string, hash: string): Promise<void> {
     await db.query(
       `INSERT INTO users(id, username, password_hash)
        VALUES ($1,$2,$3)`,
@@ -33,10 +27,7 @@ export class UserRepo {
    * @param {string} username The username to search for.
    * @returns {Promise<UserRow | null>} The user row if found, null otherwise.
    */
-  async findByUsername(
-    username: string
-  ): Promise<UserRow | null> {
-
+  async findByUsername(username: string): Promise<UserRow | null> {
     const r = await db.query<UserRow>(
       `SELECT id, username, password_hash
        FROM users

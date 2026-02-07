@@ -1,1 +1,1 @@
-export type CarrierCode = "ups";
+export type CarrierCode = 'ups'

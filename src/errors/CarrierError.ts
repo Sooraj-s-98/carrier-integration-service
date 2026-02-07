@@ -3,20 +3,19 @@
 -----------------------------------*/
 
 export type CarrierErrorCode =
-  | "CARRIER_TIMEOUT"
-  | "CARRIER_UNAVAILABLE"
-  | "CARRIER_AUTH_FAILED"
-  | "CARRIER_RATE_LIMITED"
-  | "CARRIER_BAD_RESPONSE"
-  | "CARRIER_HTTP_ERROR"
-  | "CARRIER_UNKNOWN_ERROR"
+  | 'CARRIER_TIMEOUT'
+  | 'CARRIER_UNAVAILABLE'
+  | 'CARRIER_AUTH_FAILED'
+  | 'CARRIER_RATE_LIMITED'
+  | 'CARRIER_BAD_RESPONSE'
+  | 'CARRIER_HTTP_ERROR'
+  | 'CARRIER_UNKNOWN_ERROR'
 
 /* ----------------------------------
    Carrier Error
 -----------------------------------*/
 
 export class CarrierError extends Error {
-
   public readonly httpStatus: number
 
   constructor(
@@ -27,18 +26,14 @@ export class CarrierError extends Error {
   ) {
     super(code)
 
-    this.name = "CarrierError"
+    this.name = 'CarrierError'
 
     // if explicit status passed → use it
     // else derive from code
-    this.httpStatus =
-      status ?? defaultStatus(code)
+    this.httpStatus = status ?? defaultStatus(code)
 
     // fix prototype chain (important for instanceof)
-    Object.setPrototypeOf(
-      this,
-      CarrierError.prototype
-    )
+    Object.setPrototypeOf(this, CarrierError.prototype)
   }
 
   /* ----------------------------------
@@ -58,26 +53,22 @@ export class CarrierError extends Error {
    Status Mapping
 -----------------------------------*/
 
-function defaultStatus(
-  code: CarrierErrorCode
-): number {
-
+function defaultStatus(code: CarrierErrorCode): number {
   switch (code) {
-
-    case "CARRIER_TIMEOUT":
+    case 'CARRIER_TIMEOUT':
       return 504
 
-    case "CARRIER_UNAVAILABLE":
+    case 'CARRIER_UNAVAILABLE':
       return 503
 
-    case "CARRIER_RATE_LIMITED":
+    case 'CARRIER_RATE_LIMITED':
       return 429
 
-    case "CARRIER_AUTH_FAILED":
+    case 'CARRIER_AUTH_FAILED':
       return 401
 
-    case "CARRIER_BAD_RESPONSE":
-    case "CARRIER_HTTP_ERROR":
+    case 'CARRIER_BAD_RESPONSE':
+    case 'CARRIER_HTTP_ERROR':
       return 502
 
     default:
@@ -89,28 +80,24 @@ function defaultStatus(
    User Messages (safe)
 -----------------------------------*/
 
-function userMessage(
-  code: CarrierErrorCode
-): string {
-
+function userMessage(code: CarrierErrorCode): string {
   switch (code) {
+    case 'CARRIER_TIMEOUT':
+      return 'Carrier request timed out'
 
-    case "CARRIER_TIMEOUT":
-      return "Carrier request timed out"
+    case 'CARRIER_UNAVAILABLE':
+      return 'Carrier service unavailable'
 
-    case "CARRIER_UNAVAILABLE":
-      return "Carrier service unavailable"
+    case 'CARRIER_RATE_LIMITED':
+      return 'Carrier rate limit exceeded'
 
-    case "CARRIER_RATE_LIMITED":
-      return "Carrier rate limit exceeded"
+    case 'CARRIER_AUTH_FAILED':
+      return 'Carrier authentication failed'
 
-    case "CARRIER_AUTH_FAILED":
-      return "Carrier authentication failed"
-
-    case "CARRIER_BAD_RESPONSE":
-      return "Carrier returned invalid response"
+    case 'CARRIER_BAD_RESPONSE':
+      return 'Carrier returned invalid response'
 
     default:
-      return "Carrier request failed"
+      return 'Carrier request failed'
   }
 }

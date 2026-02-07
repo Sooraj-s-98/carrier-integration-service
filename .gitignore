@@ -4,3 +4,5 @@ dist
 app.log
 
 logs
+.npm-logs
+.npm-cache

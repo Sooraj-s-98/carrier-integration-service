@@ -1,5 +1,5 @@
-import { z } from "zod"
-import { isCarrierCode } from "../carriers/guards"
+import { z } from 'zod'
+import { isCarrierCode } from '../carriers/guards'
 
 /* ---------------------------
    Address
@@ -28,7 +28,7 @@ export const packageSchema = z.object({
 ----------------------------*/
 
 export const rateRequestSchema = z.object({
-  carrier: z.enum(["ups"]),
+  carrier: z.enum(['ups']),
 
   shipper: addressSchema,
 
@@ -43,20 +43,14 @@ export const rateRequestSchema = z.object({
    Type Inference
 ----------------------------*/
 
-export type RateRequestInput =
-  z.infer<typeof rateRequestSchema>
-
-
+export type RateRequestInput = z.infer<typeof rateRequestSchema>
 
 export const carrierCallbackSchema = z.object({
-   carrier: z.string().refine(
-     isCarrierCode,
-     { message: "Unsupported carrier" }
-   ),
-   code: z.string().min(1, { message: "code is required" }),
-   state: z.string().uuid({
-      message: "state must be a valid userId UUID"
-    })
- })
+  carrier: z.string().refine(isCarrierCode, { message: 'Unsupported carrier' }),
+  code: z.string().min(1, { message: 'code is required' }),
+  state: z.string().uuid({
+    message: 'state must be a valid userId UUID'
+  })
+})
 
- export type CarrierCallbackInput = z.infer<typeof carrierCallbackSchema>
+export type CarrierCallbackInput = z.infer<typeof carrierCallbackSchema>
